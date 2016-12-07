@@ -66,6 +66,9 @@ public:
 	void Move(int _x, int _y) {
 		x = _x;
 		y = _y;
+		if ((y == 7 && team == CheckerTeam::White) || (y == 0 && team == CheckerTeam::Black)) {
+			type = CheckerType::King;
+		}
 		shape.setPosition(30 + 56 * x, 30 + 56 * y);
 	}
 
@@ -161,10 +164,10 @@ public:
 				cout << x_diff << " " << y_diff << endl;
 				if (abs(x_diff) != abs(y_diff) || x_diff == 0) return;
 				cout << x << " " << y << endl;
+				int cx = x + copysign(1, x_diff), cy = y + copysign(1, y_diff);
 				if (type == CheckerType::Default) {
 					if (x_diff > 2) return;
 					vector<Checker>::iterator toRemove;
-					int cx = x + copysign(1, x_diff), cy = y + copysign(1, y_diff);
 					cout << cx << " " << cy << endl;
 					bool invalid = false, remove = false;;
 					for (vector<Checker>::iterator s = entity.begin(); s != entity.end(); ++s) {
@@ -192,9 +195,53 @@ public:
 							EndGame();
 						}
 					}
-				}/* else if (type == CheckerType::King) {
-					return !checkIntersection(_x, _y) && x == y && x == 1;
-				}*/
+				} else if (type == CheckerType::King) {
+					vector<Checker>::iterator toRemove;
+					int tx, ty;
+					int dist_c = abs(x_diff) + abs(y_diff);
+					cout << cx << " " << cy << endl;
+					bool invalid = false, remove = false;;
+					for (vector<Checker>::iterator s = entity.begin(); s != entity.end(); ++s) {
+						s->getPosition(&tx, &ty);
+						int dist_t = abs(tx - x) + abs(ty - y);
+						if (abs(tx-x) == abs(ty-y) && tx != x && cx == x + copysign(1, tx-x) && cy == y + copysign(1, ty-y) && dist_t < dist_c) {
+							if (s->getTeam() != selected->getTeam()) {
+								if (remove) {
+									remove = false;
+									invalid = true;
+									cout << "more";
+									break;
+								} else {
+									toRemove = s;
+									remove = true;
+									cout << tx << " " << ty << endl;
+								}
+							} else {
+								invalid = true;
+							}
+
+						}
+					}
+					cout << "inv";
+					if (invalid) return;
+					selected->unsetMark();
+					if (remove == true) {
+						int tx, ty;
+						toRemove->getPosition(&tx, &ty);
+						gX = tx+copysign(1, tx - x);
+						gY = ty+copysign(1, ty - y);
+						selected->Move(gX, gY);
+						teams[3 - gameState]--;
+						entity.erase(toRemove);
+					} else {
+						selected->Move(gX, gY);
+					}
+					gameState = 3 - gameState;
+					subState = 1;
+					if (teams[gameState] == 0) {
+						EndGame();
+					}
+				}
 
 			}
 		}
