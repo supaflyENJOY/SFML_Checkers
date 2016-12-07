@@ -1,6 +1,7 @@
 #include <SFML/Graphics.hpp>
 #include <iostream>
 #include <list>  
+#include <cmath>  
 
 using namespace sf;
 using namespace std;
@@ -18,7 +19,7 @@ enum CheckerTeam {
 };
 enum CheckerType {
 	Default,
-	Queen
+	King
 };
 
 class Checker {
@@ -50,6 +51,18 @@ public:
 		return team;
 	}
 
+	CheckerType getType() {
+		return type;
+	}
+
+	void setMark() {
+		shape.setFillColor(team == CheckerTeam::White ? Color::Yellow : Color::Color(70,70,70));
+	}
+
+	void unsetMark() {
+		shape.setFillColor(team == CheckerTeam::White ? Color::White : Color::Black);
+	}
+
 	void Move(int _x, int _y) {
 		x = _x;
 		y = _y;
@@ -61,6 +74,11 @@ public:
 			return true;
 		}
 		return false;
+	}
+
+	void getPosition(int *_x, int *_y) {
+		*_x = x;
+		*_y = y;
 	}
 
 	CircleShape& getShape() {
@@ -76,11 +94,11 @@ class GameBoard {
 private:
 	Texture boardTexture;
 	Sprite boardShape;
-	list<Checker> entity;
+	vector<Checker> entity;
 	int gameState;
 	int subState;
 	int teams[2];
-	list<Checker>::iterator selected;
+	Checker *selected;
 public:
 	GameBoard() {
 		boardTexture.loadFromFile("res/board.png");
@@ -108,58 +126,70 @@ public:
 	}
 
 	void ProceedMouse(int _x, int _y) {
-		cout << "ProceedMouse" << endl;
 		if (/*gameState == 1 && */_x >= 30 && _x < 478 && _y >= 30 && _y < 478) {
 			int gX = (_x - 30) / 56;
 			int gY = (_y - 30) / 56;
-			cout << "state:1 " << endl;
 			if (subState == 1) {
-				cout << "sub:1 " << endl;
-				selected = entity.end();
-
-				for (list<Checker>::iterator s = entity.begin(); s != entity.end(); ++s)
+				cout << "sub: 1" << endl;
+				selected = NULL;
+				for (vector<Checker>::iterator s = entity.begin(); s != entity.end(); ++s)
 					if (s->checkIntersection(gX, gY) && s->getTeam() == gameState) {
-						selected = s;
+						selected = &*s;
+						selected->setMark();
 						break;
 					}
-				if (selected != entity.end()) {
+				if (selected != NULL) {
 					subState = 2;
-					cout << "Found checker! " << endl;
 				}
 			} else if (subState == 2) {
-				cout << "sub:2 " << endl;
-				bool toRemove = false;
-				bool invalid = false;
-				for (list<Checker>::iterator s = entity.begin(); s != entity.end(); ++s) {
-					if (s->checkIntersection(gX, gY)) {
-						if (s->getTeam() != selected->getTeam()) {
-							toRemove = true;
-							entity.erase(s);
-						} else {
-							invalid = true;
+				cout << "sub: 2" << endl;
+				int x, y, type = selected->getType(), team = selected->getTeam();
+				selected->getPosition(&x, &y);
+				int x_diff = (gX - x);
+				int y_diff = (gY - y);
+				cout << x_diff << " " << y_diff << endl;
+				if (abs(x_diff) != abs(y_diff) || x_diff == 0) return;
+				cout << x << " " << y << endl;
+				if (type == CheckerType::Default) {
+					if (x_diff > 2) return;
+					vector<Checker>::iterator toRemove;
+					int cx = x + copysign(1, x_diff), cy = y + copysign(1, y_diff);
+					cout << cx << " " << cy << endl;
+					bool invalid = false, remove = false;;
+					for (vector<Checker>::iterator s = entity.begin(); s != entity.end(); ++s) {
+						if (s->checkIntersection(cx,cy)) {
+							if (s->getTeam() != selected->getTeam()) {
+								toRemove = s;
+								remove = true;
+							} else {
+								invalid = true;
+							}
+							break;
 						}
-						break;
 					}
-				}
-				if (invalid) return;
-				if (toRemove == true) {
-					teams[3 - gameState]--;
-				}
-				cout << "toRemove:" << toRemove << endl;
-				cout << "Move:" << gX << " " << gY << endl;
-				cout << "Move:" << selected->getTeam() << endl;
-				selected->Move(gX, gY);
-				gameState = 3 - gameState;
-				subState = 1;
+					if (invalid) return;
+					if ((abs(x_diff) == 1 && remove == false && ((team == CheckerTeam::White && gY > y) || (team == CheckerTeam::Black && gY < y))) || (abs(x_diff) == 2 && remove == true)) {
+						selected->Move(gX, gY);
+						selected->unsetMark();
+						if (remove == true) {
+							teams[3 - gameState]--;
+							entity.erase(toRemove);
+						}
+						gameState = 3 - gameState;
+						subState = 1;
+					}
+				}/* else if (type == CheckerType::King) {
+					return !checkIntersection(_x, _y) && x == y && x == 1;
+				}*/
+
 			}
 		}
 	}
 
 	void Draw(RenderWindow *wnd) {
 		wnd->draw(boardShape);
-		for (list<Checker>::iterator ci = entity.begin(); ci != entity.end(); ++ci)
+		for (vector<Checker>::iterator ci = entity.begin(); ci != entity.end(); ++ci)
 			wnd->draw(ci->getShape());
-
 	}
 
 };
