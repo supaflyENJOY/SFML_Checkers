@@ -111,21 +111,32 @@ public:
 		entity.clear();
 	}
 
+	void EndGame() {
+		Clear();
+		StartGame();
+	}
+
 	void StartGame() {
 		for (int i = 0; i < 3; i++) {
 			for (int j = 0; j < 4; j++) {
 				entity.push_back(Checker(j * 2 + !(i % 2), i, CheckerTeam::White, CheckerType::Default));
 				entity.push_back(Checker(j * 2 + (i % 2), 7 - i, CheckerTeam::Black, CheckerType::Default));
+				teams[0]++;
+				teams[1]++;
 			}
 		}
-		teams[0] = 8;
-		teams[1] = 8;
 		gameState = CheckerTeam::White;
 		subState = 1;
 		cout << "Game started!" << endl;
 	}
+	void ProceedRightClick(int _x, int _y) {
+		if (subState == 2) {
+			selected->unsetMark();
+			subState = 1;
+		}
+	}
 
-	void ProceedMouse(int _x, int _y) {
+	void ProceedLeftClick(int _x, int _y) {
 		if (/*gameState == 1 && */_x >= 30 && _x < 478 && _y >= 30 && _y < 478) {
 			int gX = (_x - 30) / 56;
 			int gY = (_y - 30) / 56;
@@ -177,6 +188,9 @@ public:
 						}
 						gameState = 3 - gameState;
 						subState = 1;
+						if (teams[gameState] == 0) {
+							EndGame();
+						}
 					}
 				}/* else if (type == CheckerType::King) {
 					return !checkIntersection(_x, _y) && x == y && x == 1;
@@ -209,7 +223,10 @@ int main() {
 				window.close();
 			if (event.type == Event::MouseButtonPressed) {
 				if (event.key.code == Mouse::Left) {
-					gb.ProceedMouse(pos.x, pos.y);
+					gb.ProceedLeftClick(pos.x, pos.y);
+				}
+				if (event.key.code == Mouse::Right) {
+					gb.ProceedRightClick(pos.x, pos.y);
 				}
 			}
 		}
