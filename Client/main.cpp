@@ -16,20 +16,18 @@ using namespace std;
 int width = 504;
 int height = 504;
 
-//30 first
-//422 last
-
+// test param cuz no menu
 bool online = true;
 
 int main() {
 	RenderWindow window(VideoMode(width, height), "Checkers");
 	GameBoard gb = GameBoard(online);
-	Sockets sockets("127.0.0.1", 6969);
+	Sockets sockets("149.154.66.55", 6969);
+	gb.SetSockets(&sockets);
 	if (online == false) {
 		gb.StartGame();
 	} else {
 		sockets.SetGameBoard(&gb);
-		gb.SetSockets(&sockets);
 		sockets.Connect();
 	}
 

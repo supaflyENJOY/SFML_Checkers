@@ -8,6 +8,16 @@ using namespace std;
 
 class GameBoard;
 
+enum MessageType {
+	Move,
+	Remove,
+	Clear,
+	StartGame,
+	EndGame,
+	ChangeTeam,
+	ChangeState
+};
+
 class Sockets {
 private:
 	unsigned short PORT;
@@ -16,6 +26,7 @@ private:
 	Mutex globalMutex;
 	Thread* thread = 0;
 	GameBoard* gb;
+	bool connected = false;
 public:
 	Sockets(string ip, int port);
 	Sockets();
@@ -23,7 +34,7 @@ public:
 	void Connect();
 	void SetGameBoard(GameBoard *_gb);
 
-	void sendMessage(char *msg, int len);
+	void sendMessage(MessageType type, int param1 = 0, int param2 = 0, int param3 = 0, int param4 = 0);
 
 	void completeConnection(void);
 };

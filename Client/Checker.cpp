@@ -55,7 +55,7 @@ void Checker::getPosition(int *_x, int *_y) {
 	*_y = y;
 }
 
-CircleShape& Checker::getShape() {
+CircleShape Checker::getShape() {
 	return shape;
 }
 

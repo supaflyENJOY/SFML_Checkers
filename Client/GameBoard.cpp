@@ -25,24 +25,28 @@ void GameBoard::SetMyTeam(CheckerTeam team) {
 }
 
 void GameBoard::EndGame() {
+	socket->sendMessage(MessageType::EndGame);
 	Clear();
 	cout << "Game end!" << endl;
-	StartGame();
+	if(!isOnline) StartGame();
 }
 
 void GameBoard::StartGame() {
+	teams[CheckerTeam::White] = 0;
+	teams[CheckerTeam::Black] = 0;
 	for (int i = 0; i < 3; i++) {
 		for (int j = 0; j < 4; j++) {
-			entity.push_back(Checker(j * 2 + !(i % 2), i, CheckerTeam::White, CheckerType::Default));
-			entity.push_back(Checker(j * 2 + (i % 2), 7 - i, CheckerTeam::Black, CheckerType::Default));
-			teams[2]++;
-			teams[1]++;
+			entity.push_back(new Checker(j * 2 + (1-i % 2), i, CheckerTeam::White, CheckerType::Default));
+			entity.push_back(new Checker(j * 2 + (i % 2), 7 - i, CheckerTeam::Black, CheckerType::Default));
+			teams[CheckerTeam::White]++;
+			teams[CheckerTeam::Black]++;
 		}
 	}
 	gameState = CheckerTeam::White;
 	subState = 1;
 	cout << "Game started!" << endl;
 }
+
 void GameBoard::ProceedRightClick(int _x, int _y) {
 	if ((isOnline == false || gameState == myTeam) && subState == 2) {
 		selected->unsetMark();
@@ -50,8 +54,36 @@ void GameBoard::ProceedRightClick(int _x, int _y) {
 	}
 }
 
+void GameBoard::ChangeState(int state) {
+	gameState = state;
+}
+
 void GameBoard::SetSockets(Sockets *sock) {
 	socket = sock;
+}
+
+void GameBoard::RemoveByXY(int x, int y) {
+	for (auto s : entity) {
+		if (s->checkIntersection(x, y)) {
+			CheckerTeam t = s->getTeam();
+			teams[t]--;
+			entity.remove(s);
+			if (teams[t] == 0) {
+				EndGame();
+			}
+			break;
+		}
+	}
+}
+
+void GameBoard::MoveByXY(int x, int y, int new_x, int new_y) {
+	cout << x << " " << y << " " << new_x << " " << new_y << endl;
+	for (auto s : entity) {
+		if (s->checkIntersection(x, y)) {
+			s->Move(new_x, new_y);
+			break;
+		}
+	}
 }
 
 void GameBoard::ProceedLeftClick(int _x, int _y) {
@@ -61,9 +93,9 @@ void GameBoard::ProceedLeftClick(int _x, int _y) {
 		if (subState == 1) {
 			cout << "sub: 1" << endl;
 			selected = NULL;
-			for (vector<Checker>::iterator s = entity.begin(); s != entity.end(); ++s)
+			for (auto s : entity)
 				if (s->checkIntersection(gX, gY) && s->getTeam() == gameState) {
-					selected = &*s;
+					selected = s;
 					selected->setMark();
 					break;
 				}
@@ -82,10 +114,10 @@ void GameBoard::ProceedLeftClick(int _x, int _y) {
 			int cx = x + copysign(1, x_diff), cy = y + copysign(1, y_diff);
 			if (type == CheckerType::Default) {
 				if (x_diff > 2) return;
-				vector<Checker>::iterator toRemove;
+				Checker* toRemove = NULL;
 				cout << cx << " " << cy << endl;
 				bool invalid = false, remove = false;;
-				for (vector<Checker>::iterator s = entity.begin(); s != entity.end(); ++s) {
+				for (auto s : entity) {
 					if (s->checkIntersection(cx, cy)) {
 						if (s->getTeam() != selected->getTeam()) {
 							toRemove = s;
@@ -98,32 +130,31 @@ void GameBoard::ProceedLeftClick(int _x, int _y) {
 				}
 				if (invalid) return;
 				if ((abs(x_diff) == 1 && remove == false && ((team == CheckerTeam::White && gY > y) || (team == CheckerTeam::Black && gY < y))) || (abs(x_diff) == 2 && remove == true)) {
-					char s[10];
-					sprintf(s,"move %d %d",gX,gY);
-					socket->sendMessage(s,strlen(s));
+					char s[3];
 					selected->Move(gX, gY);
 					selected->unsetMark();
 					if (remove == true) {
 						teams[3 - gameState]--;
 						int ttx, tty;
 						toRemove->getPosition(&ttx, &tty);
-						sprintf(s, "rem %d %d", ttx, tty);
-						socket->sendMessage(s, strlen(s));
-						entity.erase(toRemove);
+						socket->sendMessage(MessageType::Remove, ttx, tty);
+						entity.remove(toRemove);
 					}
+					socket->sendMessage(MessageType::Move, x, y, gX, gY);
 					gameState = 3 - gameState;
+					socket->sendMessage(MessageType::ChangeState, gameState);
 					subState = 1;
 					if (teams[gameState] == 0) {
 						EndGame();
 					}
 				}
 			} else if (type == CheckerType::King) {
-				vector<Checker>::iterator toRemove;
+				Checker* toRemove = NULL;
 				int tx, ty;
 				int dist_c = abs(x_diff) + abs(y_diff);
 				cout << cx << " " << cy << endl;
 				bool invalid = false, remove = false;;
-				for (vector<Checker>::iterator s = entity.begin(); s != entity.end(); ++s) {
+				for (auto s : entity) {
 					s->getPosition(&tx, &ty);
 					int dist_t = abs(tx - x) + abs(ty - y);
 					if (abs(tx - x) == abs(ty - y) && tx != x && cx == x + copysign(1, tx - x) && cy == y + copysign(1, ty - y) && dist_t < dist_c) {
@@ -151,21 +182,19 @@ void GameBoard::ProceedLeftClick(int _x, int _y) {
 				if (remove == true) {
 					int tx, ty;
 					toRemove->getPosition(&tx, &ty);
-					sprintf(s, "rem %d %d", tx, ty);
-					socket->sendMessage(s, strlen(s));
 					gX = tx + copysign(1, tx - x);
 					gY = ty + copysign(1, ty - y);
-					selected->Move(gX, gY);					
-					sprintf(s, "move %d %d", gX, gY);
-					socket->sendMessage(s, strlen(s));
+					selected->Move(gX, gY);
+					socket->sendMessage(MessageType::Remove, tx, ty);
+					socket->sendMessage(MessageType::Move, x, y, gX, gY);
 					teams[3 - gameState]--;
-					entity.erase(toRemove);
+					entity.remove(toRemove);
 				} else {
 					selected->Move(gX, gY);
-					sprintf(s, "move %d %d", gX, gY);
-					socket->sendMessage(s, strlen(s));
+					socket->sendMessage(MessageType::Move, x, y, gX, gY);
 				}
 				gameState = 3 - gameState;
+				socket->sendMessage(MessageType::ChangeState, gameState);
 				subState = 1;
 				if (teams[gameState] == 0) {
 					EndGame();
@@ -178,6 +207,10 @@ void GameBoard::ProceedLeftClick(int _x, int _y) {
 
 void GameBoard::Draw(RenderWindow *wnd) {
 	wnd->draw(boardShape);
-	for (vector<Checker>::iterator ci = entity.begin(); ci != entity.end(); ++ci)
-		wnd->draw(ci->getShape());
+	for (auto s : entity) {
+		if (s->created) wnd->draw(s->getShape());
+
+	}
+	/*for (vector<Checker>::reverse_iterator ci = entity.rbegin(); ci != entity.rend(); ++ci) {
+	}*/
 }

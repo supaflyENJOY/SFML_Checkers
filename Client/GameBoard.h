@@ -1,6 +1,7 @@
 #include <SFML/Graphics.hpp>
 #include <SFML/Network.hpp>
 #include <iostream>
+#include <list>
 #include "Checker.h"
 using namespace sf;
 using namespace std;
@@ -13,10 +14,10 @@ class GameBoard {
 private:
 	Texture boardTexture;
 	Sprite boardShape;
-	vector<Checker> entity;
+	list <Checker *> entity;
 	int gameState;
 	int subState;
-	int teams[2];
+	int teams[3];
 	int myTeam;
 	bool isOnline;
 	Checker *selected;
@@ -29,6 +30,12 @@ public:
 	void EndGame();
 
 	void StartGame();
+
+	void RemoveByXY(int x, int y);
+
+	void ChangeState(int state);
+
+	void MoveByXY(int x, int y, int new_x, int new_y);
 
 	void SetSockets(Sockets *sock);
 

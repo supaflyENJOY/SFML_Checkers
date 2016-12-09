@@ -40,7 +40,7 @@ public:
 
 	void getPosition(int *_x, int *_y);
 
-	CircleShape& getShape();
+	CircleShape getShape();
 
 	bool operator==(Checker other) const;
 };
