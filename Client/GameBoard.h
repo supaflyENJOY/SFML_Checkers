@@ -22,8 +22,9 @@ private:
 	bool isOnline;
 	Checker *selected;
 	Sockets *socket;
+	Texture *checkerTexture;
 public:
-	GameBoard(bool _isOnline);
+	GameBoard(bool _isOnline, Texture *_checkerTexture);
 
 	void Clear();
 

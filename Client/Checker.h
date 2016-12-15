@@ -19,12 +19,12 @@ private:
 	int y;
 	CheckerTeam team;
 	CheckerType type;
-	CircleShape shape;
+	Sprite shape;
 public:
 	bool created;
 	Checker();
 
-	Checker(int _x, int _y, CheckerTeam _team, CheckerType _type);
+	Checker(int _x, int _y, CheckerTeam _team, CheckerType _type, Texture *texture);
 
 	CheckerTeam getTeam();
 
@@ -40,7 +40,7 @@ public:
 
 	void getPosition(int *_x, int *_y);
 
-	CircleShape getShape();
+	Sprite getShape();
 
 	bool operator==(Checker other) const;
 };

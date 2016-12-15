@@ -17,11 +17,16 @@ int width = 504;
 int height = 504;
 
 // test param cuz no menu
-bool online = true;
+bool online = false;
+
 
 int main() {
 	RenderWindow window(VideoMode(width, height), "Checkers");
-	GameBoard gb = GameBoard(online);
+
+	Texture checkerTexture;
+	checkerTexture.loadFromFile("res/checker.png");
+
+	GameBoard gb = GameBoard(online, &checkerTexture);
 	Sockets sockets("149.154.66.55", 6969);
 	gb.SetSockets(&sockets);
 	if (online == false) {

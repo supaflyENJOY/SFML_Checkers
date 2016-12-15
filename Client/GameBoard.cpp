@@ -8,7 +8,8 @@ using namespace sf;
 using namespace std;
 
 
-GameBoard::GameBoard(bool _isOnline) {
+GameBoard::GameBoard(bool _isOnline, Texture *_checkerTexture) {
+	checkerTexture = _checkerTexture;
 	boardTexture.loadFromFile("res/board.png");
 	boardShape = Sprite(boardTexture);
 	gameState = 0;
@@ -36,8 +37,8 @@ void GameBoard::StartGame() {
 	teams[CheckerTeam::Black] = 0;
 	for (int i = 0; i < 3; i++) {
 		for (int j = 0; j < 4; j++) {
-			entity.push_back(new Checker(j * 2 + (1-i % 2), i, CheckerTeam::White, CheckerType::Default));
-			entity.push_back(new Checker(j * 2 + (i % 2), 7 - i, CheckerTeam::Black, CheckerType::Default));
+			entity.push_back(new Checker(j * 2 + (1-i % 2), i, CheckerTeam::White, CheckerType::Default, checkerTexture));
+			entity.push_back(new Checker(j * 2 + (i % 2), 7 - i, CheckerTeam::Black, CheckerType::Default, checkerTexture));
 			teams[CheckerTeam::White]++;
 			teams[CheckerTeam::Black]++;
 		}

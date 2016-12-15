@@ -6,15 +6,16 @@ Checker::Checker() {
 	created = false;
 }
 
-Checker::Checker(int _x, int _y, CheckerTeam _team, CheckerType _type) {
-	shape = CircleShape(26);
+Checker::Checker(int _x, int _y, CheckerTeam _team, CheckerType _type, Texture *texture) {
+	shape.setTexture(*texture);
+	shape.setScale(0.52, 0.52);
+	shape.setPosition(30, 30);
 	x = _x;
 	y = _y;
 	team = _team;
 	type = _type;
 	shape.setPosition(30 + 56 * x, 30 + 56 * y);
-	shape.setFillColor(team == CheckerTeam::White ? Color::White : Color::Black);
-
+	unsetMark();
 	created = true;
 }
 
@@ -27,11 +28,11 @@ CheckerType Checker::getType() {
 }
 
 void Checker::setMark() {
-	shape.setFillColor(team == CheckerTeam::White ? Color::Yellow : Color::Color(70, 70, 70));
+	shape.setColor(team == CheckerTeam::White ? Color::Color(210, 210, 210) : Color::Color(70, 70, 70));
 }
 
 void Checker::unsetMark() {
-	shape.setFillColor(team == CheckerTeam::White ? Color::White : Color::Black);
+	shape.setColor(team == CheckerTeam::White ? Color::White : Color(40, 40, 40));
 }
 
 void Checker::Move(int _x, int _y) {
@@ -55,7 +56,7 @@ void Checker::getPosition(int *_x, int *_y) {
 	*_y = y;
 }
 
-CircleShape Checker::getShape() {
+Sprite Checker::getShape() {
 	return shape;
 }
 
